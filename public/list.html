@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>问题列表 - 问题收集系统</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        },
+                        surface: {
+                            50: '#f9fafb',
+                            100: '#f4f5f7',
+                            200: '#e5e7eb',
+                            300: '#d2d6dc',
+                            400: '#9ca3af',
+                            500: '#6b7280',
+                            600: '#4b5563',
+                            700: '#374151',
+                            800: '#1f2937',
+                            900: '#111827',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['-apple-system', 'BlinkMacSystemFont', 'Inter', 'Segoe UI', 'Roboto', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        subtle: '0 2px 5px 0 rgba(0,0,0,0.05)',
+                        medium: '0 4px 12px 0 rgba(0,0,0,0.08)',
+                        card: '0 0 0 1px rgba(0,0,0,0.05), 0 2px 8px 0 rgba(0,0,0,0.08)',
+                        toast: '0 4px 12px rgba(0, 0, 0, 0.15)'
+                    },
+                    animation: {
+                        'fade-in-up': 'fade-in-up 0.3s ease-out',
+                        'fade-in': 'fade-in 0.3s ease-out',
+                        'slide-in-right': 'slide-in-right 0.3s ease-out',
+                    },
+                    keyframes: {
+                        'fade-in-up': {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        'fade-in': {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        'slide-in-right': {
+                            '0%': { transform: 'translateX(100%)', opacity: '0' },
+                            '100%': { transform: 'translateX(0)', opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            background-image: radial-gradient(circle at top, rgba(14, 165, 233, 0.04), transparent 70%);
+        }
+        
+        .btn-transition {
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        /* 表格行交替色配置 */
+        tr.row-alternate:nth-child(odd) {
+            background-color: rgba(248, 250, 252, 0.8);
+        }
+        
+        /* 自定义滚动条 */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: rgba(156, 163, 175, 0.5);
+            border-radius: 20px;
+        }
+        
+        .copy-toast {
+            animation: toast-in-out 2s ease forwards;
+        }
+        
+        @keyframes toast-in-out {
+            0% { opacity: 0; transform: translateY(16px); }
+            15% { opacity: 1; transform: translateY(0); }
+            85% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-16px); }
+        }
+    </style>
+</head>
+<body class="bg-surface-50 min-h-screen font-sans text-surface-900">
+    <div class="container mx-auto px-4 py-8 md:py-12 max-w-5xl">
+        <header class="mb-8 md:mb-12 flex flex-col items-center">
+            <h1 class="text-2xl md:text-3xl font-semibold text-surface-900 tracking-tight">问题列表</h1>
+            <p class="mt-2 text-surface-500 text-sm">查看所有已提交的问题和建议</p>
+        </header>
+        
+        <!-- 更新提示 -->
+        <div id="updateIndicator" class="hidden bg-primary-50 border border-primary-100 text-primary-800 rounded-xl py-2 px-4 mb-4 animate-fade-in-up mx-auto max-w-md">
+            <div class="flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-primary-500" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+                <span id="updateText" class="font-medium"></span>
+            </div>
+        </div>
+        
+        <!-- 复制成功提示 -->
+        <div id="copyIndicator" class="fixed top-6 right-6 z-50 hidden">
+            <div class="bg-surface-800 text-white py-2 px-4 rounded-lg shadow-toast copy-toast flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-primary-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                    <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                </svg>
+                <span>已复制到剪贴板</span>
+            </div>
+        </div>
+        
+        <!-- 问题计数器 -->
+        <div class="flex justify-between items-center mb-3">
+            <div class="text-surface-500 text-sm">
+                共 <span id="questionCount" class="font-medium text-surface-900">0</span> 条问题
+            </div>
+            <div class="text-surface-500 text-sm flex items-center">
+                <div class="w-2 h-2 bg-primary-400 rounded-full mr-2 animate-pulse"></div>
+                <span>自动刷新</span>
+            </div>
+        </div>
+        
+        <!-- 问题列表 -->
+        <div class="bg-white rounded-xl shadow-card overflow-hidden mb-6 animate-fade-in">
+            <div class="max-h-[calc(100vh-220px)] overflow-y-auto custom-scrollbar">
+                <table class="min-w-full divide-y divide-surface-100">
+                    <thead class="bg-surface-50 sticky top-0 z-10">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-surface-500 uppercase tracking-wider w-16 md:w-20">
+                                序号
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-surface-500 uppercase tracking-wider">
+                                问题内容
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-surface-500 uppercase tracking-wider w-20 md:w-24">
+                                操作
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="questionTableBody" class="bg-white divide-y divide-surface-100">
+                        <!-- 问题列表将通过JavaScript动态加载 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- 返回按钮 -->
+        <div class="flex justify-center">
+            <a href="/" class="text-primary-600 hover:text-primary-800 text-sm font-medium inline-flex items-center transition-colors duration-200">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+                </svg>
+                返回首页
+            </a>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const tableBody = document.getElementById('questionTableBody');
+            const updateIndicator = document.getElementById('updateIndicator');
+            const updateText = document.getElementById('updateText');
+            const copyIndicator = document.getElementById('copyIndicator');
+            const questionCount = document.getElementById('questionCount');
+            let lastQuestionCount = 0; // 上次问题数量
+            
+            // 复制文本到剪贴板的函数
+            async function copyTextToClipboard(text) {
+                try {
+                    await navigator.clipboard.writeText(text);
+                    showCopySuccessMessage();
+                    return true;
+                } catch (err) {
+                    console.error('复制失败:', err);
+                    return false;
+                }
+            }
+            
+            // 显示复制成功消息
+            function showCopySuccessMessage() {
+                // 显示复制成功提示
+                copyIndicator.classList.remove('hidden');
+                copyIndicator.classList.add('block');
+                
+                // 2秒后自动隐藏(动画已包含)
+                setTimeout(() => {
+                    copyIndicator.classList.add('hidden');
+                    copyIndicator.classList.remove('block');
+                }, 2000);
+            }
+            
+            // 加载问题列表的函数
+            function loadQuestionList() {
+                fetch('/api/list')
+                    .then(response => response.json())
+                    .then(data => {
+                        // 对比数据变化
+                        const hasNewData = Array.isArray(data) && data.length > lastQuestionCount;
+                        
+                        // 清空表格内容，准备重新渲染
+                        tableBody.innerHTML = '';
+                        
+                        // 更新问题计数
+                        questionCount.textContent = Array.isArray(data) ? data.length : 0;
+                        
+                        if (data && data.length > 0) {
+                            // 渲染问题列表
+                            data.forEach((item, index) => {
+                                const row = document.createElement('tr');
+                                row.className = 'row-alternate hover:bg-surface-50 transition-colors';
+                                
+                                // 序号单元格
+                                const idCell = document.createElement('td');
+                                idCell.className = 'px-6 py-4 whitespace-nowrap text-sm font-medium text-surface-500';
+                                idCell.textContent = item.id;
+                                row.appendChild(idCell);
+                                
+                                // 问题内容单元格
+                                const contentCell = document.createElement('td');
+                                contentCell.className = 'px-6 py-4 whitespace-pre-line text-sm text-surface-800';
+                                contentCell.textContent = item.content;
+                                row.appendChild(contentCell);
+                                
+                                // 复制按钮单元格
+                                const actionCell = document.createElement('td');
+                                actionCell.className = 'px-6 py-4 whitespace-nowrap text-right text-sm font-medium';
+                                
+                                const copyButton = document.createElement('button');
+                                copyButton.className = 'text-primary-600 hover:text-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-colors rounded-md px-2 py-1 btn-transition';
+                                copyButton.innerHTML = `
+                                    <div class="flex items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                                            <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                                        </svg>
+                                        <span>复制</span>
+                                    </div>
+                                `;
+                                
+                                // 添加点击事件，复制问题内容
+                                copyButton.addEventListener('click', () => {
+                                    copyTextToClipboard(item.content);
+                                });
+                                
+                                actionCell.appendChild(copyButton);
+                                row.appendChild(actionCell);
+                                
+                                tableBody.appendChild(row);
+                                
+                                // 为新添加的行添加淡入动画
+                                if (hasNewData && index >= lastQuestionCount) {
+                                    row.classList.add('animate-fade-in');
+                                }
+                            });
+                            
+                            // 如果有新数据，显示提示
+                            if (hasNewData && lastQuestionCount > 0) {
+                                showUpdateNotification(data.length - lastQuestionCount);
+                            }
+                            
+                            // 更新问题数量
+                            lastQuestionCount = data.length;
+                        } else {
+                            // 没有数据的情况
+                            const row = document.createElement('tr');
+                            const cell = document.createElement('td');
+                            cell.colSpan = 3;
+                            cell.className = 'px-6 py-16 text-center text-surface-500 text-sm';
+                            
+                            const emptyState = document.createElement('div');
+                            emptyState.className = 'flex flex-col items-center';
+                            emptyState.innerHTML = `
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-surface-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                                </svg>
+                                <span class="text-base font-medium text-surface-600">暂无问题数据</span>
+                                <p class="mt-1 text-surface-400">等待用户提交问题</p>
+                            `;
+                            
+                            cell.appendChild(emptyState);
+                            row.appendChild(cell);
+                            tableBody.appendChild(row);
+                            
+                            // 更新问题数量
+                            lastQuestionCount = 0;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('获取问题列表失败:', error);
+                        
+                        // 显示错误信息
+                        tableBody.innerHTML = '';
+                        const row = document.createElement('tr');
+                        const cell = document.createElement('td');
+                        cell.colSpan = 3;
+                        cell.className = 'px-6 py-16 text-center';
+                        
+                        const errorState = document.createElement('div');
+                        errorState.className = 'flex flex-col items-center';
+                        errorState.innerHTML = `
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-red-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span class="text-base font-medium text-red-600">加载失败</span>
+                            <p class="mt-1 text-surface-500">请刷新页面重试</p>
+                            <button id="retryBtn" class="mt-4 px-4 py-2 bg-surface-100 hover:bg-surface-200 text-surface-700 rounded-lg transition-colors text-sm">重试</button>
+                        `;
+                        
+                        cell.appendChild(errorState);
+                        row.appendChild(cell);
+                        tableBody.appendChild(row);
+                        
+                        // 添加重试按钮功能
+                        setTimeout(() => {
+                            const retryBtn = document.getElementById('retryBtn');
+                            if (retryBtn) {
+                                retryBtn.addEventListener('click', loadQuestionList);
+                            }
+                        }, 0);
+                    });
+            }
+            
+            // 显示数据更新提示
+            function showUpdateNotification(newCount) {
+                updateText.textContent = `收到 ${newCount} 个新问题！`;
+                updateIndicator.classList.remove('hidden');
+                updateIndicator.classList.add('flex');
+                
+                // 3秒后隐藏提示
+                setTimeout(() => {
+                    // 添加淡出动画
+                    updateIndicator.style.transition = 'opacity 0.5s ease';
+                    updateIndicator.style.opacity = '0';
+                    
+                    setTimeout(() => {
+                        updateIndicator.classList.add('hidden');
+                        updateIndicator.classList.remove('flex');
+                        updateIndicator.style.opacity = '1';
+                    }, 500);
+                }, 3000);
+            }
+            
+            // 首次加载数据
+            loadQuestionList();
+            
+            // 设置定时器，每5秒自动刷新一次数据
+            setInterval(loadQuestionList, 5000);
+        });
+    </script>
+</body>
+</html> 
