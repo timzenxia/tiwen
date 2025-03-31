@@ -7,6 +7,7 @@ const fs = require('fs');
 // 引入API处理函数
 const handleSubmit = require('./api/submit');
 const handleList = require('./api/list');
+const handleDelete = require('./api/delete');
 
 // 创建Express应用
 const app = express();
@@ -34,6 +35,7 @@ if (!fs.existsSync(dataFilePath)) {
 // API路由
 app.post('/api/submit', handleSubmit); // 处理提交问题
 app.get('/api/list', handleList); // 获取问题列表
+app.delete('/api/delete/:id', handleDelete); // 删除特定问题
 
 // 前端路由（SPA支持）
 app.get('/', (req, res) => {

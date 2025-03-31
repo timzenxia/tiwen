@@ -127,13 +127,78 @@
             max-width: 100%;
             display: block;
         }
+        
+        /* 密码保护层动画 */
+        .auth-container {
+            animation: fade-in 0.3s ease;
+        }
+        
+        .auth-container.hiding {
+            animation: fade-out 0.3s ease forwards;
+        }
+        
+        @keyframes fade-out {
+            0% { opacity: 1; }
+            100% { opacity: 0; visibility: hidden; }
+        }
+        
+        /* 抖动动画 */
+        .shake {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-3px, 0, 0); }
+            40%, 60% { transform: translate3d(3px, 0, 0); }
+        }
     </style>
 </head>
 <body class="bg-surface-50 min-h-screen font-sans text-surface-900">
-    <div class="container mx-auto px-4 py-8 md:py-12 max-w-5xl">
-        <header class="mb-8 md:mb-12 flex flex-col items-center">
+    <!-- 密码验证层 -->
+    <div id="authContainer" class="auth-container fixed inset-0 bg-surface-50 bg-opacity-95 z-50 flex items-center justify-center">
+        <div class="bg-white rounded-2xl shadow-card p-8 max-w-md w-full mx-4 animate-fade-in-up">
+            <div class="text-center mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-primary-500 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                <h2 class="text-xl font-semibold text-surface-800">管理员访问</h2>
+                <p class="text-surface-500 text-sm mt-1">请输入密码查看问题列表</p>
+            </div>
+            
+            <div class="mb-4" id="passwordField">
+                <input 
+                    type="password" 
+                    id="passwordInput" 
+                    class="w-full px-4 py-3 rounded-xl border border-surface-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all" 
+                    placeholder="输入访问密码"
+                >
+                <p id="passwordError" class="text-red-500 text-sm mt-1 hidden">密码错误，请重试</p>
+            </div>
+            
+            <button 
+                id="loginBtn" 
+                class="w-full py-3 bg-primary-500 text-white rounded-xl hover:bg-primary-600 btn-transition font-medium focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-primary-500"
+            >
+                确认
+            </button>
+        </div>
+    </div>
+
+    <!-- 主内容区 -->
+    <div id="mainContent" class="container mx-auto px-4 py-8 md:py-12 max-w-5xl" style="display: none;">
+        <header class="mb-8 md:mb-12 flex flex-col items-center relative">
             <h1 class="text-2xl md:text-3xl font-semibold text-surface-900 tracking-tight">问题列表</h1>
             <p class="mt-2 text-surface-500 text-sm">查看所有已提交的问题和建议</p>
+            
+            <!-- 登出按钮 -->
+            <button id="logoutBtn" class="absolute right-0 top-0 text-surface-500 hover:text-surface-700 text-sm flex items-center btn-transition">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+                登出
+            </button>
         </header>
         
         <!-- 更新提示 -->
@@ -154,6 +219,38 @@
                     <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
                 </svg>
                 <span>已复制到剪贴板</span>
+            </div>
+        </div>
+        
+        <!-- 删除成功提示 -->
+        <div id="deleteIndicator" class="fixed top-6 right-6 z-50 hidden">
+            <div class="bg-surface-800 text-white py-2 px-4 rounded-lg shadow-toast copy-toast flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+                <span>删除成功</span>
+            </div>
+        </div>
+        
+        <!-- 删除确认对话框 -->
+        <div id="deleteConfirmDialog" class="fixed inset-0 bg-surface-900 bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6 animate-fade-in-up">
+                <div class="text-center mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-red-500 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    <h2 class="text-xl font-semibold text-surface-800">确认删除</h2>
+                    <p class="text-surface-500 text-sm mt-1">删除后无法恢复，确定要删除这条问题吗？</p>
+                </div>
+                
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button id="cancelDeleteBtn" class="px-4 py-2 bg-surface-100 text-surface-700 rounded-lg hover:bg-surface-200 transition-colors btn-transition">
+                        取消
+                    </button>
+                    <button id="confirmDeleteBtn" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors btn-transition">
+                        确认删除
+                    </button>
+                </div>
             </div>
         </div>
         
@@ -205,12 +302,127 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // 密码保护相关元素
+            const authContainer = document.getElementById('authContainer');
+            const mainContent = document.getElementById('mainContent');
+            const passwordInput = document.getElementById('passwordInput');
+            const loginBtn = document.getElementById('loginBtn');
+            const passwordError = document.getElementById('passwordError');
+            const passwordField = document.getElementById('passwordField');
+            const logoutBtn = document.getElementById('logoutBtn');
+            
+            // 问题列表相关元素
             const tableBody = document.getElementById('questionTableBody');
             const updateIndicator = document.getElementById('updateIndicator');
             const updateText = document.getElementById('updateText');
             const copyIndicator = document.getElementById('copyIndicator');
+            const deleteIndicator = document.getElementById('deleteIndicator');
+            const deleteConfirmDialog = document.getElementById('deleteConfirmDialog');
+            const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+            const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
             const questionCount = document.getElementById('questionCount');
             let lastQuestionCount = 0; // 上次问题数量
+            let currentDeleteId = null; // 当前要删除的问题ID
+            let refreshInterval = null; // 自动刷新定时器
+            
+            // 密码配置
+            const correctPassword = "wxw666666"; // 在实际应用中，这应该从服务器端验证
+            const authTokenName = "tiwen_auth_token";
+            
+            // 检查用户是否已登录
+            function checkAuth() {
+                const authToken = localStorage.getItem(authTokenName);
+                if (authToken === "authenticated") {
+                    showMainContent();
+                }
+            }
+            
+            // 显示主内容
+            function showMainContent() {
+                authContainer.classList.add('hiding');
+                setTimeout(() => {
+                    authContainer.style.display = 'none';
+                    mainContent.style.display = 'block';
+                    // 加载数据并启动自动刷新
+                    loadQuestionList();
+                    startAutoRefresh();
+                }, 300);
+            }
+            
+            // 登出功能
+            function logout() {
+                // 停止自动刷新
+                stopAutoRefresh();
+                
+                // 清除登录状态
+                localStorage.removeItem(authTokenName);
+                mainContent.style.display = 'none';
+                authContainer.style.display = 'flex';
+                authContainer.classList.remove('hiding');
+                passwordInput.value = '';
+                passwordError.classList.add('hidden');
+            }
+            
+            // 验证密码
+            function validatePassword() {
+                const password = passwordInput.value;
+                
+                if (password === correctPassword) {
+                    // 保存认证状态
+                    localStorage.setItem(authTokenName, "authenticated");
+                    showMainContent();
+                } else {
+                    // 显示错误
+                    passwordError.classList.remove('hidden');
+                    passwordField.classList.add('shake');
+                    setTimeout(() => {
+                        passwordField.classList.remove('shake');
+                    }, 500);
+                }
+            }
+            
+            // 启动自动刷新
+            function startAutoRefresh() {
+                // 确保不会重复启动定时器
+                stopAutoRefresh();
+                
+                // 创建新的定时器
+                refreshInterval = setInterval(() => {
+                    if (document.visibilityState === 'visible' && mainContent.style.display === 'block') {
+                        loadQuestionList();
+                    }
+                }, 5000);
+            }
+            
+            // 停止自动刷新
+            function stopAutoRefresh() {
+                if (refreshInterval) {
+                    clearInterval(refreshInterval);
+                    refreshInterval = null;
+                }
+            }
+            
+            // 监听页面可见性变化
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible' && mainContent.style.display === 'block') {
+                    // 页面变为可见时，立即刷新一次并确保定时器在运行
+                    loadQuestionList();
+                    startAutoRefresh();
+                }
+            });
+            
+            // 监听登录按钮点击
+            loginBtn.addEventListener('click', validatePassword);
+            
+            // 监听密码输入框回车
+            passwordInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    validatePassword();
+                }
+            });
+            
+            // 监听登出按钮
+            logoutBtn.addEventListener('click', logout);
             
             // 复制文本到剪贴板的函数
             async function copyTextToClipboard(text) {
@@ -236,6 +448,75 @@
                     copyIndicator.classList.remove('block');
                 }, 2000);
             }
+            
+            // 显示删除确认对话框
+            function showDeleteConfirmDialog(id) {
+                currentDeleteId = id;
+                deleteConfirmDialog.classList.remove('hidden');
+            }
+            
+            // 隐藏删除确认对话框
+            function hideDeleteConfirmDialog() {
+                deleteConfirmDialog.classList.add('hidden');
+                currentDeleteId = null;
+            }
+            
+            // 显示删除成功消息
+            function showDeleteSuccessMessage() {
+                // 显示删除成功提示
+                deleteIndicator.classList.remove('hidden');
+                deleteIndicator.classList.add('block');
+                
+                // 2秒后自动隐藏(动画已包含)
+                setTimeout(() => {
+                    deleteIndicator.classList.add('hidden');
+                    deleteIndicator.classList.remove('block');
+                }, 2000);
+            }
+            
+            // 删除问题的函数
+            async function deleteQuestion(id) {
+                try {
+                    const response = await fetch(`/api/delete/${id}`, {
+                        method: 'DELETE',
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        // 删除成功，刷新列表
+                        loadQuestionList();
+                        showDeleteSuccessMessage();
+                    } else {
+                        // 删除失败，显示错误
+                        console.error('删除失败:', result.message);
+                        alert('删除失败: ' + result.message);
+                    }
+                } catch (error) {
+                    console.error('删除请求出错:', error);
+                    alert('删除请求出错，请重试');
+                }
+                
+                // 隐藏确认对话框
+                hideDeleteConfirmDialog();
+            }
+            
+            // 监听取消删除按钮
+            cancelDeleteBtn.addEventListener('click', hideDeleteConfirmDialog);
+            
+            // 监听确认删除按钮
+            confirmDeleteBtn.addEventListener('click', () => {
+                if (currentDeleteId !== null) {
+                    deleteQuestion(currentDeleteId);
+                }
+            });
+            
+            // 点击对话框外部关闭对话框
+            deleteConfirmDialog.addEventListener('click', (e) => {
+                if (e.target === deleteConfirmDialog) {
+                    hideDeleteConfirmDialog();
+                }
+            });
             
             // 加载问题列表的函数
             function loadQuestionList() {
@@ -279,6 +560,11 @@
                                 const actionCell = document.createElement('td');
                                 actionCell.className = 'px-6 py-4 whitespace-nowrap text-right text-sm font-medium';
                                 
+                                // 创建操作按钮容器
+                                const actionContainer = document.createElement('div');
+                                actionContainer.className = 'flex justify-end space-x-2';
+                                
+                                // 复制按钮
                                 const copyButton = document.createElement('button');
                                 copyButton.className = 'text-primary-600 hover:text-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-colors rounded-md px-2 py-1 btn-transition';
                                 copyButton.innerHTML = `
@@ -296,7 +582,29 @@
                                     copyTextToClipboard(item.content);
                                 });
                                 
-                                actionCell.appendChild(copyButton);
+                                // 删除按钮
+                                const deleteButton = document.createElement('button');
+                                deleteButton.className = 'text-red-600 hover:text-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors rounded-md px-2 py-1 btn-transition';
+                                deleteButton.innerHTML = `
+                                    <div class="flex items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                        </svg>
+                                        <span>删除</span>
+                                    </div>
+                                `;
+                                
+                                // 添加点击事件，弹出删除确认对话框
+                                deleteButton.addEventListener('click', () => {
+                                    showDeleteConfirmDialog(item.id);
+                                });
+                                
+                                // 将按钮添加到操作容器
+                                actionContainer.appendChild(copyButton);
+                                actionContainer.appendChild(deleteButton);
+                                
+                                // 将操作容器添加到单元格
+                                actionCell.appendChild(actionContainer);
                                 row.appendChild(actionCell);
                                 
                                 tableBody.appendChild(row);
@@ -393,12 +701,6 @@
                     }, 500);
                 }, 3000);
             }
-            
-            // 首次加载数据
-            loadQuestionList();
-            
-            // 设置定时器，每5秒自动刷新一次数据
-            setInterval(loadQuestionList, 5000);
         });
     </script>
 </body>
