@@ -109,6 +109,24 @@
             85% { opacity: 1; transform: translateY(0); }
             100% { opacity: 0; transform: translateY(-16px); }
         }
+        
+        /* 问题内容单元格样式 */
+        .break-words {
+            word-break: break-word;
+            overflow-wrap: break-word;
+            hyphens: auto;
+        }
+        
+        /* 确保表格自适应 */
+        table.table-fixed {
+            table-layout: fixed;
+        }
+        
+        /* 响应式文本容器 */
+        .text-container {
+            max-width: 100%;
+            display: block;
+        }
     </style>
 </head>
 <body class="bg-surface-50 min-h-screen font-sans text-surface-900">
@@ -153,13 +171,13 @@
         <!-- 问题列表 -->
         <div class="bg-white rounded-xl shadow-card overflow-hidden mb-6 animate-fade-in">
             <div class="max-h-[calc(100vh-220px)] overflow-y-auto custom-scrollbar">
-                <table class="min-w-full divide-y divide-surface-100">
+                <table class="min-w-full divide-y divide-surface-100 table-fixed">
                     <thead class="bg-surface-50 sticky top-0 z-10">
                         <tr>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-surface-500 uppercase tracking-wider w-16 md:w-20">
                                 序号
                             </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-surface-500 uppercase tracking-wider">
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-surface-500 uppercase tracking-wider w-auto">
                                 问题内容
                             </th>
                             <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-surface-500 uppercase tracking-wider w-20 md:w-24">
@@ -247,8 +265,14 @@
                                 
                                 // 问题内容单元格
                                 const contentCell = document.createElement('td');
-                                contentCell.className = 'px-6 py-4 whitespace-pre-line text-sm text-surface-800';
-                                contentCell.textContent = item.content;
+                                contentCell.className = 'px-6 py-4 text-sm text-surface-800';
+                                
+                                // 创建一个内容容器，确保长文本正确换行
+                                const contentContainer = document.createElement('div');
+                                contentContainer.className = 'whitespace-pre-line break-words max-w-full text-container';
+                                contentContainer.textContent = item.content;
+                                
+                                contentCell.appendChild(contentContainer);
                                 row.appendChild(contentCell);
                                 
                                 // 复制按钮单元格
